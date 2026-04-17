@@ -22,6 +22,9 @@ export class RidexService {
       password: env.ridexPassword
     });
 
+    // 👉 YEH 2 LINES ADD KARO
+  console.log('RIDEX login response keys:', Object.keys(data || {}));
+  console.log('RIDEX login response status token exists:', !!data?.token);
     this.token = data.token;
     return this.token;
   }
