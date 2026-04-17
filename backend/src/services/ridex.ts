@@ -16,18 +16,26 @@ export class RidexService {
     });
   }
 
-  private async authenticate() {
-    const { data } = await this.client.post('/api/login', {
-      email: env.ridexEmail,
-      password: env.ridexPassword
-    });
+ private async authenticate() {
+  const response = await this.client.post('/api/login', {
+    email: env.ridexEmail,
+    password: env.ridexPassword
+  });
 
-    // 👉 YEH 2 LINES ADD KARO
-  console.log('RIDEX login response keys:', Object.keys(data || {}));
-  console.log('RIDEX login response status token exists:', !!data?.token);
-    this.token = data.token;
-    return this.token;
+  const payload = response.data?.data ?? response.data;
+  const token = payload?.token;
+
+  console.log('RIDEX login top-level keys:', Object.keys(response.data || {}));
+  console.log('RIDEX login nested keys:', Object.keys(payload || {}));
+  console.log('RIDEX login token exists:', !!token);
+
+  if (!token) {
+    throw new Error('RIDEX token missing in login response');
   }
+
+  this.token = token;
+  return this.token;
+}
 
   private async authHeaders() {
     if (!this.token) await this.authenticate();
