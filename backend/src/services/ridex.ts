@@ -16,30 +16,31 @@ export class RidexService {
     });
   }
 
- private async authenticate() {
-  const response = await this.client.post('/api/login', {
-    email: env.ridexEmail,
-    password: env.ridexPassword
-  });
+  private async authenticate() {
+    const response = await this.client.post('/api/login', {
+      email: env.ridexEmail,
+      password: env.ridexPassword
+    });
 
-  const payload = response.data?.data ?? response.data;
-  const token = payload?.token;
+    const payload = response.data?.data ?? response.data;
+    const token = payload?.token;
 
-  console.log('RIDEX login top-level keys:', Object.keys(response.data || {}));
-  console.log('RIDEX login nested keys:', Object.keys(payload || {}));
-  console.log('RIDEX login token exists:', !!token);
+    if (!token) {
+      throw new Error('RIDEX token missing in login response');
+    }
 
-  if (!token) {
-    throw new Error('RIDEX token missing in login response');
+    this.token = token;
+    return this.token;
   }
 
-  this.token = token;
-  return this.token;
-}
-
   private async authHeaders() {
-    if (!this.token) await this.authenticate();
-    return { Authorization: `Bearer ${this.token}` };
+    if (!this.token) {
+      await this.authenticate();
+    }
+
+    return {
+      Authorization: `Bearer ${this.token}`
+    };
   }
 
   private async withRetry<T>(fn: () => Promise<T>) {
@@ -47,9 +48,11 @@ export class RidexService {
       return await fn();
     } catch (error: any) {
       if (error?.response?.status === 401) {
+        this.token = null;
         await this.authenticate();
         return await fn();
       }
+
       throw error;
     }
   }
@@ -57,10 +60,12 @@ export class RidexService {
   async getArticles(page = 1, limit = 50) {
     return this.withRetry(async () => {
       const headers = await this.authHeaders();
+
       const { data } = await this.client.get('/api/v1/articles', {
         headers,
         params: { page, limit }
       });
+
       return data;
     });
   }
@@ -68,7 +73,13 @@ export class RidexService {
   async getArticlesByNumbers(articleNo: string[]) {
     return this.withRetry(async () => {
       const headers = await this.authHeaders();
-      const { data } = await this.client.post('/api/v1/articles', { articleNo }, { headers });
+
+      const { data } = await this.client.post(
+        '/api/v1/articles',
+        { articleNo },
+        { headers }
+      );
+
       return data;
     });
   }
@@ -76,6 +87,7 @@ export class RidexService {
   async getArticleInfo(articleNo: string[], page = 1) {
     return this.withRetry(async () => {
       const headers = await this.authHeaders();
+
       const { data } = await this.client.request({
         url: '/api/v2/articles/info',
         method: 'GET',
@@ -83,14 +95,24 @@ export class RidexService {
         params: { page },
         data: { articleNo }
       });
+
       return data;
     });
   }
 
-  async createOrder(payload: { deliveryType: number; items: { articleNo: string; qty: number }[] }) {
+  async createOrder(payload: {
+    deliveryType: number;
+    items: { articleNo: string; qty: number }[];
+  }) {
     return this.withRetry(async () => {
       const headers = await this.authHeaders();
-      const { data } = await this.client.post('/api/v1/order/create', payload, { headers });
+
+      const { data } = await this.client.post(
+        '/api/v1/order/create',
+        payload,
+        { headers }
+      );
+
       return data;
     });
   }
