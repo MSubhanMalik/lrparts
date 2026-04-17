@@ -17,7 +17,7 @@ type BaseArticle = {
   ArticleNo: string;
   Price?: number;
   Unit?: number;
-  Quantity?: number;
+  Quantity?: number | string;
 };
 
 export async function syncRidexCatalog(pages = 1) {
@@ -65,7 +65,7 @@ export async function syncRidexCatalog(pages = 1) {
             supplierArticleId: article.ArticleId || null,
             supplierProductName: article.Name,
             price: article.Price != null ? new Prisma.Decimal(article.Price) : null,
-            quantity: article.Quantity || 0,
+            quantity: Number(article.Quantity ?? 0),
             unit: article.Unit || null,
             productId: product.id,
             rawJson: article,
@@ -77,7 +77,7 @@ export async function syncRidexCatalog(pages = 1) {
             supplierArticleId: article.ArticleId || null,
             supplierProductName: article.Name,
             price: article.Price != null ? new Prisma.Decimal(article.Price) : null,
-            quantity: article.Quantity || 0,
+            quantity: Number(article.Quantity ?? 0),
             unit: article.Unit || null,
             productId: product.id,
             rawJson: article,
