@@ -8,58 +8,62 @@ datasource db {
 }
 
 model Vehicle {
-  id         String   @id @default(cuid())
+  id         String           @id @default(cuid())
   make       String
   model      String
   year       Int
   engine     String?
   generation String?
   fitments   ProductFitment[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 }
 
 model Product {
-  id               String            @id @default(cuid())
-  slug             String            @unique
+  id               String                 @id @default(cuid())
+  slug             String                 @unique
   name             String
-  sku              String?           @unique
+  sku              String?                @unique
   brand            String?
   category         String?
   description      String?
   imageUrl         String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
   fitments         ProductFitment[]
   supplierProducts SupplierProduct[]
   orderItems       OrderItem[]
+  specifications   ProductSpecification[]
+  oemReferences    ProductOemReference[]
 }
 
 model ProductFitment {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   productId String
   vehicleId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@unique([productId, vehicleId])
 }
 
 model SupplierProduct {
-  id               String   @id @default(cuid())
-  supplierName     String
-  articleNo        String   @unique
-  supplierArticleId Int?
+  id                  String    @id @default(cuid())
+  supplierName        String
+  articleNo           String    @unique
+  supplierArticleId   Int?
   supplierProductName String?
-  productId        String?
-  price            Decimal? @db.Decimal(10, 2)
-  quantity         Int      @default(0)
-  unit             Int?
-  ean              String?
-  rawJson          Json?
-  product          Product? @relation(fields: [productId], references: [id])
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  productId           String?
+  price               Decimal?  @db.Decimal(10, 2)
+  quantity            Int       @default(0)
+  unit                Int?
+  ean                 String?
+  imageUrl            String?
+  lastSyncedAt        DateTime?
+  rawJson             Json?
+  product             Product?  @relation(fields: [productId], references: [id])
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }
 
 model Order {
@@ -74,13 +78,44 @@ model Order {
 }
 
 model OrderItem {
-  id         String  @id @default(cuid())
-  orderId    String
-  productId  String?
-  articleNo  String
-  name       String?
-  qty        Int
-  unitPrice  Decimal? @db.Decimal(10, 2)
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product    Product? @relation(fields: [productId], references: [id])
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String?
+  articleNo String
+  name      String?
+  qty       Int
+  unitPrice Decimal? @db.Decimal(10, 2)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id])
+}
+
+model ProductSpecification {
+  id        String   @id @default(cuid())
+  productId String
+  name      String
+  value     String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductOemReference {
+  id        String   @id @default(cuid())
+  productId String
+  oemNumber String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@unique([productId, oemNumber])
+}
+
+model SyncRun {
+  id           String   @id @default(cuid())
+  supplier     String
+  status       String
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+  totalRead    Int      @default(0)
+  totalSaved   Int      @default(0)
+  errorMessage String?
 }
